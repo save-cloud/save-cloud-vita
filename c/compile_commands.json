@@ -1,0 +1,8 @@
+[
+  {
+    "directory": "/home/yuuko/develop/vita-save-cloud/c",
+    "command": "/usr/local/vitasdk/bin/arm-vita-eabi-gcc  -isystem /usr/local/vitasdk/arm-vita-eabi/include  -Wl,-q -std=gnu11 -o CMakeFiles/save-cloud.dir/tail.c.obj -c /home/yuuko/develop/vita-save-cloud/c/tai.c",
+    "file": "/home/yuuko/develop/vita-save-cloud/c/tai.c",
+    "output": "CMakeFiles/save-cloud.dir/tai.c.obj"
+  }
+]

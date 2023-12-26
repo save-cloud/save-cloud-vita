@@ -1,0 +1,3 @@
+[submodule "extern/VitaShell"]
+	path = extern/VitaShell
+	url = https://github.com/TheOfficialFloW/VitaShell.git

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+if ! [ -d "$SCRIPT_DIR"/assets/sce_sys/resources ]; then
+  mkdir "$SCRIPT_DIR"/assets/sce_sys/resources
+fi
+
+if [ -f "$SCRIPT_DIR"/assets/sce_sys/resources/kernel.skprx ] && [ -f "$SCRIPT_DIR"/assets/sce_sys/resources/user.suprx ] && [ -f "$SCRIPT_DIR"/c/libVitaShellUser_stub_weak.a ]; then
+  echo "assets/sce_sys/resources/kernel.skprx and assets/sce_sys/resources/user.suprx exists and continue!"
+else
+  echo "start to build assets/sce_sys/resources/kernel.skprx and assets/sce_sys/resources/user.suprx"
+  # build vitashell kernel
+  cd "$SCRIPT_DIR"/extern/VitaShell/modules/kernel
+  rm -rf build
+  mkdir build
+  cd build
+  cmake ..
+  make
+
+  # move kernel
+  cp kernel.skprx "$SCRIPT_DIR"/assets/sce_sys/resources
+  rm -rf "$SCRIPT_DIR"/extern/VitaShell/modules/user/kernel
+  mkdir "$SCRIPT_DIR"/extern/VitaShell/modules/user/kernel
+  cp libVitaShellKernel2_stub.a ../../user/kernel/
+  cd ../
+  rm -rf build
+
+  # build vitashell user
+  cd "$SCRIPT_DIR"/extern/VitaShell/modules/user
+  rm -rf build
+  mkdir build
+  cd build
+  cmake ..
+  make
+
+  # move user
+  cp user.suprx "$SCRIPT_DIR"/assets/sce_sys/resources
+  cp libVitaShellUser_stub_weak.a "$SCRIPT_DIR"/c
+  cd ../
+  rm -rf build
+  rm -rf "$SCRIPT_DIR"/extern/VitaShell/modules/user/kernel
+fi
