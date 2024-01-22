@@ -7,6 +7,7 @@ use std::{
 
 use crate::{
     app::AppData,
+    constant::HOME_PAGE_URL,
     utils::get_active_color,
     vita2d::{
         is_button, rgba, vita2d_draw_rect, vita2d_draw_text, vita2d_draw_texture_scale,
@@ -16,7 +17,7 @@ use crate::{
 
 use self::{game_menu::GameMenu, save_menu::SaveMenu};
 
-use super::ui_base::UIBase;
+use super::{ui_base::UIBase, ui_dialog::UIDialog};
 
 pub mod game_menu;
 pub mod save_menu;
@@ -298,6 +299,9 @@ impl UIBase for UITitles {
                 } else if is_button(buttons, SceCtrlButtons::SceCtrlTriangle) {
                     self.game_menu.open();
                 }
+            }
+            if is_button(buttons, SceCtrlButtons::SceCtrlSquare) {
+                UIDialog::present_about(HOME_PAGE_URL);
             }
             // update selected title icon
             UITitles::update_selected(self, app_data, buttons);

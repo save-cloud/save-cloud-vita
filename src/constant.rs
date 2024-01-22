@@ -80,3 +80,4 @@ pub const DIALOG_CANCEL_TEXT: &str = "(X) 取消";
 // home page
 pub const HOME_PAGE_URL: &str = "https://save-cloud.sketchraw.com?psvita=go";
 pub const INVALID_EAT_PANCAKE: &str = "缺少 eat.pancake";
+pub const ABOUT_TEXT: &str = "Save Cloud 云存档，扫码访问主页！";

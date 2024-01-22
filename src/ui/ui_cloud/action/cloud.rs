@@ -52,8 +52,8 @@ impl Action for CloudAction {
         let dir = Arc::clone(dir);
         let path = path.to_string();
         let name = item_name.to_string();
+        Loading::show();
         tokio::spawn(async move {
-            Loading::show();
             do_cloud_action(&path, &name, action, dir);
             Loading::hide();
         });
