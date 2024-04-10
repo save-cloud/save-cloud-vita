@@ -17,7 +17,7 @@ use crate::{
         GAME_CARD_SAVE_DIR, GAME_SAVE_CLOUD_DIR, GAME_SAVE_DIR, HOME_PAGE_URL, SCREEN_WIDTH,
     },
     ime::get_current_format_time,
-    tai::{mount_pfs, unmount_pfs, Title, Titles},
+    tai::{mount_pfs, psv_launch_app_by_title_id, unmount_pfs, Title, Titles},
     ui::{
         ui_cloud::list_state::ListState, ui_dialog::UIDialog, ui_loading::Loading, ui_toast::Toast,
     },
@@ -35,6 +35,7 @@ enum GameMenuAction {
     DeleteGameSave,
     DeleteSelectedGameSave,
     DeleteAllGameSaves,
+    LaunchApp,
 }
 
 impl Deref for GameMenuAction {
@@ -48,6 +49,7 @@ impl Deref for GameMenuAction {
             GameMenuAction::DeleteGameSave => "删除该游戏存档",
             GameMenuAction::DeleteSelectedGameSave => "删除该游戏本地存档备份",
             GameMenuAction::DeleteAllGameSaves => "删除所有游戏本地存档备份",
+            GameMenuAction::LaunchApp => "启动游戏",
         }
     }
 }
@@ -61,7 +63,7 @@ impl Display for GameMenuAction {
 pub struct GameList {
     pending: Arc<AtomicBool>,
     list_state: ListState,
-    list: [GameMenuAction; 6],
+    list: [GameMenuAction; 7],
     game_save_dir_prepare_to_mount: Arc<RwLock<Option<String>>>,
     game_save_dir_on_mounted: Arc<RwLock<Option<String>>>,
 }
@@ -72,6 +74,7 @@ impl GameList {
             pending: Arc::new(AtomicBool::new(false)),
             list_state: ListState::new(15),
             list: [
+                GameMenuAction::LaunchApp,
                 GameMenuAction::BackupAllGameSave,
                 GameMenuAction::BackupAllGameSaveToCloud,
                 GameMenuAction::ChangeAccountId,
@@ -402,6 +405,15 @@ impl GameList {
         if is_button(buttons, SceCtrlButtons::SceCtrlCircle) {
             let action = &self.list[selected_idx as usize];
             match action {
+                GameMenuAction::LaunchApp => {
+                    if UIDialog::present(&format!(
+                        "{}: {}",
+                        &GameMenuAction::LaunchApp,
+                        title.name()
+                    )) {
+                        psv_launch_app_by_title_id(title.title_id());
+                    }
+                }
                 GameMenuAction::BackupAllGameSave => {
                     if UIDialog::present(&GameMenuAction::BackupAllGameSave) {
                         self.backup_all_game_save(titles);

@@ -18,14 +18,14 @@ use crate::{
 
 use super::ui_base::UIBase;
 
-const IMAGE_ICON_PATH: &str = "ux0:app/SAVECLOUD/sce_sys/resources/icon.png";
-const IMAGE_DEVICE_PATH: &str = "ux0:app/SAVECLOUD/sce_sys/resources/device.png";
-const IMAGE_CLOUD_PATH: &str = "ux0:app/SAVECLOUD/sce_sys/resources/cloud.png";
-const IMAGE_DEVICE_BG_PATH: &str = "ux0:app/SAVECLOUD/sce_sys/resources/device_bg.jpg";
+const IMAGE_ICON_PATH: &str = "app0:sce_sys/resources/icon.png";
+const IMAGE_DEVICE_PATH: &str = "app0:sce_sys/resources/device.png";
+const IMAGE_CLOUD_PATH: &str = "app0:sce_sys/resources/cloud.png";
+const IMAGE_DEVICE_BG_PATH: &str = "app0:sce_sys/resources/device_bg.jpg";
 const ICON_SIZE: i32 = 70;
 const ICON_OFFSET: i32 = 10;
 const ICON_GAP: i32 = 20;
-const TEXT_VERSION: &str = "V2023.12.26";
+const TEXT_VERSION: &str = "V2024.02.28";
 
 pub struct UIDesktop {
     selected_idx: i32,

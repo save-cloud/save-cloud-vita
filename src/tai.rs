@@ -1,12 +1,19 @@
 use core::slice;
-use std::{cell::RefCell, ffi::CStr, os::raw::*, ptr::null};
+use std::{cell::RefCell, ffi::CStr, fs, os::raw::*, path::Path, ptr::null};
 
-use crate::utils::str_to_c_str;
+use crate::utils::{create_parent_if_not_exists, str_to_c_str};
+
+const APP_KERNEL_PATH: &str = "app0:sce_sys/resources/kernel.skprx";
+const PLUGIN_KERNEL_PATHS: [&str; 3] = [
+    "ux0:data/SAVECLOUD/sce_sys/resources/kernel.skprx",
+    "ux0:VitaShell/module/kernel.skprx",
+    "ux0:data/save-cloud/kernel.skprx",
+];
 
 extern "C" {
     fn sceAppUtilLoad();
     fn sceAppUtilExit();
-    fn taiLoad() -> i32;
+    fn taiLoad(path: *const c_char) -> i32;
     fn sceLoad() -> i32;
     fn pfs_mount(path: *const c_char) -> i32;
     fn pfs_unmount() -> i32;
@@ -17,6 +24,8 @@ extern "C" {
     fn get_account_id() -> c_ulonglong;
     // return < 0 if failed
     fn change_account_id(fs_path: *const c_char, account_id: c_ulonglong) -> c_char;
+    fn prevent_to_sleep();
+    fn launch_app_by_title_id(title_id: *const c_char);
 }
 
 #[repr(C)]
@@ -168,9 +177,28 @@ pub fn sce_app_util_exit() {
 /// load skprx module
 pub fn tai_load_start_kernel_module() -> Result<(), String> {
     unsafe {
-        let id = taiLoad();
-        if id < 0 && id != -2147299309 {
-            return Err(format!("cannot find kernel module: {:#x}\n", id));
+        let mut loaded = false;
+        for path in PLUGIN_KERNEL_PATHS {
+            let path = str_to_c_str(path);
+            let id = taiLoad(path.as_slice().as_ptr() as *const c_char);
+            if id >= 0 || id == -2147299309 {
+                loaded = true;
+                break;
+            }
+        }
+        if !loaded {
+            if Path::new(APP_KERNEL_PATH).exists() {
+                let to_path = PLUGIN_KERNEL_PATHS[2];
+                create_parent_if_not_exists(to_path).ok();
+                fs::copy(APP_KERNEL_PATH, to_path).ok();
+                let path = str_to_c_str(to_path);
+                let id = taiLoad(path.as_slice().as_ptr() as *const c_char);
+                if id < 0 && id != -2147299309 {
+                    return Err(format!("cannot find kernel module: {:#x}\n", id));
+                }
+            } else {
+                return Err("cannot find kernel module\n".to_string());
+            }
         }
     }
 
@@ -236,5 +264,18 @@ pub fn change_psv_account_id(sfo_path: &str, account_id: u64) -> i8 {
     unsafe {
         let c_str = str_to_c_str(sfo_path);
         change_account_id(c_str.as_slice().as_ptr() as *const c_char, account_id)
+    }
+}
+
+pub fn psv_prevent_sleep() {
+    unsafe {
+        prevent_to_sleep();
+    }
+}
+
+pub fn psv_launch_app_by_title_id(title_id: &str) {
+    unsafe {
+        let c_str = str_to_c_str(title_id);
+        launch_app_by_title_id(c_str.as_slice().as_ptr() as *const c_char);
     }
 }

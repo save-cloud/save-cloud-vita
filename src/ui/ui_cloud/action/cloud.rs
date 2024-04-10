@@ -16,13 +16,13 @@ const INIT_RETRY_DURATION: Duration = Duration::from_millis(1000 * 10);
 use super::{do_cloud_action, Action};
 
 pub struct CloudAction {
-    last_init_at: Instant,
+    last_init_at: Arc<RwLock<Instant>>,
 }
 
 impl CloudAction {
     pub fn new() -> CloudAction {
         CloudAction {
-            last_init_at: Instant::now() - INIT_RETRY_DURATION,
+            last_init_at: Arc::new(RwLock::new(Instant::now() - INIT_RETRY_DURATION)),
         }
     }
 }
@@ -35,11 +35,15 @@ impl Action for CloudAction {
         if !Api::get_read().is_login() {
             return;
         }
-        if Instant::now() - self.last_init_at < INIT_RETRY_DURATION {
+        if Arc::strong_count(&self.last_init_at) > 1 {
             return;
         }
-        self.last_init_at = Instant::now();
-        self.do_action("", "/", DirPendingAction::Enter, dir);
+        if let Ok(last_init_at) = self.last_init_at.try_read() {
+            if Instant::now() - *last_init_at < INIT_RETRY_DURATION {
+                return;
+            }
+            self.do_action("", "/", DirPendingAction::Enter, dir);
+        }
     }
 
     fn do_action(
@@ -52,9 +56,13 @@ impl Action for CloudAction {
         let dir = Arc::clone(dir);
         let path = path.to_string();
         let name = item_name.to_string();
+        let last_init_at = Arc::clone(&self.last_init_at);
         Loading::show();
         tokio::spawn(async move {
             do_cloud_action(&path, &name, action, dir);
+            if let Ok(mut last_init_at) = last_init_at.write() {
+                *last_init_at = Instant::now();
+            }
             Loading::hide();
         });
     }

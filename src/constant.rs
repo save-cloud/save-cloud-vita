@@ -81,3 +81,9 @@ pub const DIALOG_CANCEL_TEXT: &str = "(X) 取消";
 pub const HOME_PAGE_URL: &str = "https://save-cloud.sketchraw.com?psvita=go";
 pub const INVALID_EAT_PANCAKE: &str = "缺少 eat.pancake";
 pub const ABOUT_TEXT: &str = "Save Cloud 云存档，扫码访问主页！";
+
+// certificate
+pub const SSL_CERT_ENV_KEY: &str = "SSL_CERT_FILE";
+pub const CURL_CERT_CURL: &str = "https://curl.se/ca/cacert.pem";
+pub const SAVE_CLOUD_CERT: &str = "ux0:data/save-cloud/cacert.pem";
+pub const PSV_DEVICE_CERT: &str = "vs0:data/external/cert/CA_LIST.cer";

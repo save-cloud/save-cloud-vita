@@ -8,6 +8,7 @@ use std::{
 };
 
 use log::{error, info};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
 use crate::{
     api::{Api, AuthData},
@@ -519,8 +520,12 @@ impl UIList for SaveListCloud {
         tokio::spawn(async move {
             Loading::notify_title("正在删除云备份".to_string());
             Loading::notify_desc(backup_name.split("/").last().unwrap_or("").to_string());
-            match Api::start_file_manager(&backup_name, None, None, crate::api::ApiOperates::Delete)
-            {
+            match Api::start_file_manager(
+                &utf8_percent_encode(&backup_name, NON_ALPHANUMERIC).to_string(),
+                None,
+                None,
+                crate::api::ApiOperates::Delete,
+            ) {
                 Ok(_) => {
                     let (game_save_dir, res) = Api::fetch_save_cloud_list(&title_id, false);
                     if let Some(game_save_dir) = game_save_dir {

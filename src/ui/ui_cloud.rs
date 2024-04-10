@@ -8,6 +8,7 @@ use std::{
 };
 
 use log::{error, info};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
 use crate::{
     api::{Api, AuthData},
@@ -79,9 +80,7 @@ impl UICloud {
             panel.init();
         }
         if self.no_data_tex.is_none() {
-            self.no_data_tex = Some(vita2d_load_png_file(
-                "ux0:app/SAVECLOUD/sce_sys/resources/no-data.png",
-            ));
+            self.no_data_tex = Some(vita2d_load_png_file("app0:sce_sys/resources/no-data.png"));
         }
         if self.qr_code_state.qr_code.is_some() {
             if Api::get_read().is_login() {
@@ -308,9 +307,9 @@ impl UICloud {
             Loading::notify_title("正在重命名".to_string());
             Loading::notify_desc(input.clone());
             match Api::start_file_manager(
-                &from,
+                &utf8_percent_encode(&from, NON_ALPHANUMERIC).to_string(),
                 None,
-                Some(&input),
+                Some(&utf8_percent_encode(&input, NON_ALPHANUMERIC).to_string()),
                 crate::api::ApiOperates::Rename,
             ) {
                 Ok(_) => {
@@ -398,7 +397,7 @@ impl UICloud {
             Loading::notify_title("正在删除文件".to_string());
             Loading::notify_desc(name.to_string());
             match Api::start_file_manager(
-                &join_path(&from_path, &name),
+                &utf8_percent_encode(&join_path(&from_path, &name), NON_ALPHANUMERIC).to_string(),
                 None,
                 None,
                 crate::api::ApiOperates::Delete,
@@ -600,7 +599,7 @@ impl UICloud {
         tokio::spawn(async move {
             Loading::notify_title("正在解压".to_string());
             Loading::notify_desc(name.clone());
-            match zip_extract(join_path(&from_path, &name), output_dir) {
+            match zip_extract(join_path(&from_path, &name), output_dir, None) {
                 Ok(_) => {
                     do_local_action(
                         &from_path,
@@ -668,6 +667,13 @@ impl UICloud {
         fs_id: u64,
         to_path: &str,
     ) -> bool {
+        if !UIDialog::present(&format!("确定下载 {} ？", name)) {
+            return false;
+        }
+        if to_path == "" {
+            Toast::show("请先选择下载位置！".to_string());
+            return false;
+        }
         if Path::new(&join_path(to_path, name)).exists() {
             Toast::show("目标文件已存在！".to_string());
             return false;

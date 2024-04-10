@@ -1,6 +1,8 @@
+use std::time::Instant;
+
 use crate::{
     constant::{BUTTON_HOLDING_DELAY, BUTTON_HOLDING_REPEAT_DELAY},
-    tai::{unmount_pfs, Titles},
+    tai::{psv_prevent_sleep, unmount_pfs, Titles},
     ui::{
         ui_base::UIBase, ui_cloud::UICloud, ui_desktop::UIDesktop, ui_loading::Loading,
         ui_titles::UITitles, ui_toast::Toast,
@@ -76,6 +78,7 @@ impl App {
         let mut button_first_active_at = 0;
         let mut button_active_at = 0;
         let mut buttons_pre = 0;
+        let mut sleep_lock_at = Instant::now();
         'main: loop {
             // get the inputs here
             let buttons_origins = vita2d_ctrl_peek_positive();
@@ -94,10 +97,14 @@ impl App {
             };
             buttons_pre = buttons_origins;
 
-            // update
-            let is_forces = self.update(buttons);
-            // exit
-            if !is_forces && is_button(buttons, SceCtrlButtons::SceCtrlStart) {
+            // if update is forces
+            if self.update(buttons) {
+                if sleep_lock_at.elapsed().as_secs() >= 10 {
+                    psv_prevent_sleep();
+                    sleep_lock_at = Instant::now();
+                }
+            } else if is_button(buttons, SceCtrlButtons::SceCtrlStart) {
+                // exit
                 break 'main;
             }
             // draw

@@ -5,9 +5,11 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use log::error;
+
 use crate::{
     app::AppData,
-    constant::HOME_PAGE_URL,
+    constant::{GAME_CARD_SAVE_DIR, GAME_SAVE_DIR, HOME_PAGE_URL},
     utils::get_active_color,
     vita2d::{
         is_button, rgba, vita2d_draw_rect, vita2d_draw_text, vita2d_draw_texture_scale,
@@ -58,7 +60,7 @@ impl UITitles {
                 if idx > 0 {
                     self.selected_idx = idx - 1;
                 }
-                if idx < ICON_COL * top {
+                if self.selected_idx < ICON_COL * top && top > 0 {
                     self.top_row -= 1;
                 }
             }
@@ -72,7 +74,7 @@ impl UITitles {
             }
             _ if is_button(buttons, SceCtrlButtons::SceCtrlUp) => {
                 if idx / ICON_COL == 0 {
-                    let rows = size / ICON_COL + 1;
+                    let rows = (size - 1) / ICON_COL + 1;
                     self.selected_idx = self.selected_idx % ICON_COL + (rows - 1) * ICON_COL;
                     if self.selected_idx >= size {
                         self.selected_idx = size - 1;
@@ -87,7 +89,7 @@ impl UITitles {
                 }
             }
             _ if is_button(buttons, SceCtrlButtons::SceCtrlDown) => {
-                if (idx + ICON_COL) / ICON_COL + 1 > size / ICON_COL + 1 {
+                if (idx + ICON_COL) / ICON_COL > (size - 1) / ICON_COL {
                     self.selected_idx = self.selected_idx % ICON_COL;
                     self.top_row = 0;
                 } else {
@@ -144,11 +146,15 @@ impl UITitles {
                     let iconpath = title.iconpath().to_string();
                     let icon_bufs = Arc::clone(&self.icon_bufs);
                     tokio::spawn(async move {
-                        let file = fs::read(iconpath).expect("open icon file");
-                        icon_bufs
-                            .write()
-                            .expect("get write lock of icon bufs in spawn")
-                            .insert(idx as u32, Some(file));
+                        if Path::new(&iconpath).exists() {
+                            let file = fs::read(iconpath).expect("open icon file");
+                            icon_bufs
+                                .write()
+                                .expect("get write lock of icon bufs in spawn")
+                                .insert(idx as u32, Some(file));
+                        } else {
+                            error!("app iconpath not exists: {}", iconpath);
+                        }
                     });
                 }
             } else {
@@ -164,10 +170,11 @@ impl UITitles {
         if titles.size() == 0 {
             return;
         }
-        let title_id = titles
+        let title = titles
             .get_title_by_idx(self.selected_idx)
-            .expect("get title id by idx")
-            .title_id();
+            .expect("get title id by idx");
+        let title_id = title.title_id();
+        let real_id = title.real_id();
         let title = format!(
             "{}  |  {}",
             title_id,
@@ -176,7 +183,10 @@ impl UITitles {
                 .expect("get title by idx")
                 .name(),
         );
-        let save_path = format!("ux0:user/00/savedata/{}", title_id);
+        let mut save_path = format!("{}/{}", GAME_CARD_SAVE_DIR, real_id);
+        if !Path::new(&save_path).exists() {
+            save_path = format!("{}/{}", GAME_SAVE_DIR, real_id);
+        }
         let num = format!("→ {}/{}", self.selected_idx + 1, titles.size());
 
         let left = 330;

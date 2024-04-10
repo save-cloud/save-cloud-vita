@@ -10,7 +10,6 @@ use std::{
 
 use base64::{engine::general_purpose, Engine as _};
 use log::error;
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 
 use zip::ZipWriter;
 
@@ -177,7 +176,11 @@ pub fn zip_file(from: &str, name: &str, to: &str) -> Result<(), Box<dyn Error>> 
     Ok(())
 }
 
-pub fn zip_extract(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
+pub fn zip_extract(
+    from: impl AsRef<Path>,
+    to: impl AsRef<Path>,
+    back_list: Option<&[&str]>,
+) -> Result<(), Box<dyn Error>> {
     let mut zip = zip::ZipArchive::new(fs::File::open(from)?)?;
     for i in 0..zip.len() {
         Loading::notify_title(format!("正在解压 {}/{}", i + 1, zip.len()));
@@ -199,6 +202,11 @@ pub fn zip_extract(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), B
                 if !p.exists() {
                     fs::create_dir_all(p)?;
                 }
+            }
+            if back_list.is_some_and(|list| list.iter().find(|&&x| x == file_name.name()).is_some())
+                && output_path.exists()
+            {
+                continue;
             }
             let mut output_file = fs::File::create(&output_path)?;
             io::copy(&mut file_name, &mut output_file)?;
@@ -263,17 +271,12 @@ pub fn restore_game_save(from: &str, to: &str) -> Result<(), Box<dyn Error>> {
         }
     }
     Loading::notify_title("正在恢复存档".to_string());
-    let mut res = zip_extract(from, to);
+    let mut res = zip_extract(from, to, Some(&BACKUP_BLACK_LIST));
     if res.is_ok() {
         let sfo_path = format!("{}/sce_sys/param.sfo", to);
         res = update_sfo_file_with_current_account_id(&sfo_path);
     }
     res
-}
-
-pub fn url_encode(param: &str) -> String {
-    const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
-    utf8_percent_encode(param, FRAGMENT).to_string()
 }
 
 pub fn base64_encode(data: &[u8]) -> String {
@@ -330,6 +333,18 @@ pub fn get_game_local_backup_dir(title_id: &str, name: &str) -> String {
     }
 
     default_dir_path
+}
+
+pub fn create_parent_if_not_exists(path: &str) -> Result<(), Box<dyn Error>> {
+    match Path::new(path).parent() {
+        Some(parent) => {
+            if !parent.exists() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        None => {}
+    }
+    Ok(())
 }
 
 #[cfg(test)]
